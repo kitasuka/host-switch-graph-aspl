@@ -102,4 +102,4 @@ end
 
 k, a = aspl(@e, @n, @m)
 # puts "diam = #{k} aspl = #{a}"
-puts [k, a]
+puts [a, k]
