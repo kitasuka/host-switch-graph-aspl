@@ -10,8 +10,8 @@ $ ruby host-switch-graph.rb example.edges
 ```
 
 ## Graph file format
-1st line: three numbers; the number of hosts, the number of switches, and the number of ports per switch
-other lines: a edge defined by a pair of node number.
+- 1st line: three numbers; the number of hosts, the number of switches, and the number of ports per switch
+- other lines: a edge defined by a pair of node number.
 
 ## Features
 - Ruby script (easy to run).
