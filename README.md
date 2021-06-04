@@ -5,8 +5,8 @@ For a given host-switch graph, compute host-to-host diameter (h-diameter) and ho
 ```
 $ ruby host-switch-graph.rb example.edges
 # of host, # of switch, radix: 80 41 6
-5
 4.472151898734177
+5
 ```
 
 ## Graph file format
