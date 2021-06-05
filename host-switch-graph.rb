@@ -43,15 +43,17 @@ f.each { |l|
   addEdge(@e, i, j, @n + @m, @r)
 }
 
-## ホストの次数を確認
-ds = (0...@n).map { |i| @e[i].length }
-puts "ホストの次数: #{ds}" if @verbose
-if ds.min > 1
-  puts "ホストの次数が1を超えています"
-  exit
-end
+# スイッチごとのホスト数
+@sh = (0...@m).map { 0 } # @sh[i - @n]: スイッチiのホスト数
+(0...@n).each { |i|
+  if @e[i].length > 1
+    puts "ホストの次数が1を超えています"
+    exit
+  end
+  @sh[@e[i].first - @n] += 1
+}
 
-## スイッチの次数を確認
+# スイッチの次数を確認
 ds = (@n...@n + @m).map { |i| @e[i].length }
 puts "スイッチの次数: #{ds}" if @verbose
 puts "スイッチの次数の最小，最大: #{ds.min} #{ds.max}" if @verbose
@@ -60,44 +62,73 @@ if ds.length > 0 && ds.max > @r
   exit
 end
 
-# 平均パス長
+# 平均パス長（h-ASPL）の計算
+
 def aspl(e, n, m)
-  # e ノードごとの枝のリスト
-  # n ホスト数
-  # m スイッチ数
-  dsum = 0
+  removeHosts(e, n)
   diam = 0
-  (0...n).each { |i| # このノードからの距離を調べる
-    dist = (0...n + m).to_a.map { n + m }
-    dist[i] = 0
-    dx = 1 # jsにあるノードはiからの距離がx
-    js = e[i]
-    while js.length > 0
-      js2 = [] # jsに隣接するノード．次のjs
-      js.each { |j| # 次のノード
-        if dist[j] > dx
-          dist[j] = dx
-          js2 += e[j] # 重複するかもしれないけどそのまま
-        end
-      }
-      dx += 1
-      js = js2
-    end
-    # p dist[0...h]
-    p [i, hist(dist[0...n])] if @verbose
-    dsum += dist[0...n].reduce(:+)
-    diam = [diam, dist[0...n].max].max
+  sum = 0
+  (n...n + m).each { |i| # スイッチi
+    dist = spl(e, i, n, m)[n...n + m]
+    diam = [diam, dist.max + 2].max
+    puts "スイッチ #{i}: #{dist.zip(@sh)}" if @verbose
+    dist.zip(@sh).each { |dj, ns| # dj 距離, ns ホスト数
+      if dj > 0
+        sum += (dj + 2) * ns * @sh[i - n]
+      else # 同じスイッチにつながっているホストペア（dj == 0）
+        sum += (dj + 2) * ns * (ns - 1)
+      end
+    }
   }
-  [diam, 1.0 * dsum / n / (n - 1)]
+  [diam, 1.0 * sum / n / (n - 1)]
 end
 
-# 距離ごとのノード数
+## スイッチiから他のスイッチまでのパス長
+def spl(e, i, n, m)
+  # e ノードごとの枝のリスト
+  # i スイッチの番号
+  # n ホスト数
+  # m スイッチ数
+  dist = (0...n + m).to_a.map { n + m }
+  dist[i] = 0
+  dx = 1 # jsにあるノードはiからの距離がx
+  js = e[i]
+  while js.length > 0
+    js2 = [] # jsに隣接するノード．次のjs
+    js.each { |j| # 次のノード
+      next if j < n # ホストは無視
+      if dist[j] > dx
+        dist[j] = dx
+        js2 += e[j] # 重複するかもしれないけどそのまま
+      end
+    }
+    dx += 1
+    js = js2.uniq # 重複を削除
+  end
+  p [i, hist(dist[0...n])] if @verbose
+  dist
+end
+
+## 距離ごとのノード数
 def hist(dist)
   h = (0..dist.max).to_a.map { 0 }
   dist.each { |d|
     h[d] += 1
   }
   h
+end
+
+## スイッチからホストへの枝を削除
+def removeHosts(e, n)
+  (n...e.length).each { |i| # スイッチi
+    e[i] = e[i].map { |j| # .sort.map { |j|
+      if j < n
+        nil
+      else
+        j
+      end
+    }.compact
+  }
 end
 
 k, a = aspl(@e, @n, @m)
